@@ -65,29 +65,32 @@ while os.clock() - startTime < 300 do
     game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CreateRaidTeam"):InvokeServer(unpack(args))
     game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("StartChallengeRaidMap"):FireServer()
 
-    -- New: Teleport to the boss after the raid starts
-    task.wait(2) -- Wait for the character to be placed in the raid
+    -- Wait for the first teleport (into the raid)
+    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("LocalPlayerTeleportSuccess").OnClientEvent:Wait()
+    
+    -- Teleport to the boss
     if bossCFrame then
         local player = game:GetService("Players").LocalPlayer
         local char = player.Character or player.CharacterAdded:Wait()
         local rootPart = char:WaitForChild("HumanoidRootPart")
-        rootPart.CFrame = bossCFrame + Vector3.new(0, 5, 0) -- Teleport 5 studs higher
+        rootPart.CFrame = bossCFrame + Vector3.new(0, 5, 0)
     end
 
     -- Boss fight loop
     local fightDuration = os.clock() + math.random(60, 90)
     while os.clock() < fightDuration do
-        -- Attack using the remote event you found
         game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("PlayerClickAttackSkill"):FireServer({})
         task.wait(math.random(0.5, 1.5))
 
-        -- Dash
         game:GetService("VirtualInputManager"):SendKeyEvent(true, "Q", false, game)
         task.wait(0.1)
         game:GetService("VirtualInputManager"):SendKeyEvent(false, "Q", false, game)
         task.wait(math.random(5, 7))
     end
-    
+
+    -- Wait for the second teleport (out of the raid)
+    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("LocalPlayerTeleportSuccess").OnClientEvent:Wait()
+
     raidIndex = raidIndex + 1
 
     if raidIndex > #raidCodes then

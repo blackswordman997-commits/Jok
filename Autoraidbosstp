@@ -1,0 +1,97 @@
+-- Run for 5 minutes (300 seconds)
+local startTime = os.clock()
+
+local raidCodes = {
+    -- World 1
+    930001, 930002, 930003, 930005, 930006, 930008,
+    -- World 2
+    930011, 930012, 930013, 930015, 930016, 930018,
+    -- World 3
+    930021, 930022, 930023, 930025, 930026, 930028,
+    -- World 4
+    930031, 930032, 930033, 930035, 930036, 930038,
+    -- World 5
+    930041, 930042, 930043, 930045, 930046, 930048
+}
+
+-- Mappings of raid codes to boss positions
+local bossPositions = {
+    [930001] = CFrame.new(0, 3, -13.2054863),
+    [930002] = CFrame.new(0, 3, -13.2054863),
+    [930003] = CFrame.new(0, 3, -13.2054863),
+    [930005] = CFrame.new(0, 3, -13.2054863),
+    [930006] = CFrame.new(0, 3, -13.2054863),
+    [930008] = CFrame.new(0, 3, -13.2054863),
+   
+    [930011] = CFrame.new(-256.748657, 0.752754688, 1.22947598),
+    [930012] = CFrame.new(-256.748657, 0.752754688, 1.22947598),
+    [930013] = CFrame.new(-256.748657, 0.752754688, 1.22947598),
+    [930015] = CFrame.new(-256.748657, 0.752754688, 1.22947598),
+    [930016] = CFrame.new(-256.748657, 0.752754688, 1.22947598),
+    [930018] = CFrame.new(-256.748657, 0.752754688, 1.22947598),
+
+    [930021] = CFrame.new(20, 3, -13.2054863),
+    [930022] = CFrame.new(20, 3, -13.2054863),
+    [930023] = CFrame.new(20, 3, -13.2054863),
+    [930025] = CFrame.new(20, 3, -13.2054863),
+    [930026] = CFrame.new(20, 3, -13.2054863),
+    [930028] = CFrame.new(20, 3, -13.2054863),
+
+    [930031] = CFrame.new(20.1408787, 5.38408756, 41.6305428),
+    [930032] = CFrame.new(20.1408787, 5.38408756, 41.6305428),
+    [930033] = CFrame.new(20.1408787, 5.38408756, 41.6305428),
+    [930035] = CFrame.new(20.1408787, 5.38408756, 41.6305428),
+    [930036] = CFrame.new(20.1408787, 5.38408756, 41.6305428),
+    [930038] = CFrame.new(20.1408787, 5.38408756, 41.6305428),
+
+    [930041] = CFrame.new(40, 3, -13.2054863),
+    [930042] = CFrame.new(40, 3, -13.2054863),
+    [930043] = CFrame.new(40, 3, -13.2054863),
+    [930045] = CFrame.new(40, 3, -13.2054863),
+    [930046] = CFrame.new(40, 3, -13.2054863),
+    [930048] = CFrame.new(40, 3, -13.2054863),
+}
+
+local raidIndex = 1
+
+while os.clock() - startTime < 300 do
+    local currentRaidCode = raidCodes[raidIndex]
+    local bossCFrame = bossPositions[currentRaidCode]
+
+    -- Add a small random delay before each raid action
+    task.wait(math.random(1, 3))
+
+    -- Raid actions to start a new raid
+    local args = {currentRaidCode}
+    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CreateRaidTeam"):InvokeServer(unpack(args))
+    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("StartChallengeRaidMap"):FireServer()
+
+    -- New: Teleport to the boss after the raid starts
+    task.wait(2) -- Wait for the character to be placed in the raid
+    if bossCFrame then
+        local player = game:GetService("Players").LocalPlayer
+        local char = player.Character or player.CharacterAdded:Wait()
+        local rootPart = char:WaitForChild("HumanoidRootPart")
+        rootPart.CFrame = bossCFrame
+    end
+
+    -- Boss fight loop
+    local fightDuration = os.clock() + math.random(60, 90)
+    while os.clock() < fightDuration do
+        -- Attack using the remote event you found
+        game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("PlayerClickAttackSkill"):FireServer({})
+        task.wait(math.random(0.5, 1.5))
+
+        -- Dash
+        game:GetService("VirtualInputManager"):SendKeyEvent(true, "Q", false, game)
+        task.wait(0.1)
+        game:GetService("VirtualInputManager"):SendKeyEvent(false, "Q", false, game)
+        task.wait(math.random(5, 7))
+    end
+   
+    raidIndex = raidIndex + 1
+
+    if raidIndex > #raidCodes then
+        raidIndex = 1
+    end
+end

@@ -1,9 +1,9 @@
 -- This script will attempt to join a list of raids for a duration of 5 minutes.
 -- It will also perform a "dash" action after each raid attempt.
 
--- Run for 5 minutes (300 seconds)
+-- Run for 30 minutes (1800 seconds)
 local startTime = tick()
-local duration = 300 -- 5 minutes in seconds
+local duration = 1800 -- 30 minutes in seconds
 
 -- You can adjust these wait times to your preference
 local firstWait = 3 -- Wait after raid actions (was 6s)
@@ -29,7 +29,7 @@ local raidIDs = {
     930061, 930062
 }
 
--- The main loop that will run for 5 minutes
+-- The main loop that will run for 30 minutes
 while tick() - startTime < duration do
     -- Loop through each raid ID in the list
     for i, raidId in ipairs(raidIDs) do

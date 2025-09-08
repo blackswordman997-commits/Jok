@@ -30,17 +30,36 @@ local allRaidIDs = {
 -- ACTIONS
 -- ===================================================================
 
--- This function now loops through every ID and tries to start the raid.
--- The 'pcall' ensures the script won't error if a raid doesn't exist.
+-- This function now intelligently scans for raids.
+-- It checks if a raid team was successfully created before proceeding
+-- and adds a small delay to prevent spamming the server.
 local function doRaid()
     print("Scanning for any available raids...")
     for _, raidId in ipairs(allRaidIDs) do
-        pcall(function()
+        -- Use pcall to safely call the server function and get the result
+        local success, result = pcall(function()
             local args = {raidId}
-            -- NOTE: Corrected the typo from "CreateRadeam" to "CreateRaidTeam"
-            Remotes:WaitForChild("CreateRaidTeam"):InvokeServer(unpack(args))
-            Remotes:WaitForChild("StartChallengeRaidMap"):FireServer()
+            -- InvokeServer asks the server to create a team and returns a response
+            return Remotes:WaitForChild("CreateRaidTeam"):InvokeServer(unpack(args))
         end)
+
+        -- If the server call was successful AND the server confirmed the team was made (result is true)
+        if success and result then
+            print("✅ Successfully created team for Raid ID: " .. tostring(raidId))
+            
+            -- Now, attempt to start the raid map
+            pcall(function()
+                Remotes:WaitForChild("StartChallengeRaidMap"):FireServer()
+                print("-> Sent request to start the raid.")
+            end)
+            
+            -- Since we found and joined a raid, stop scanning for others.
+            break 
+        end
+        
+        -- Wait a very short time before trying the next ID. This is CRITICAL.
+        -- It prevents the server from flagging you for spam.
+        wait(0.1) 
     end
     print("Scan complete. Waiting for next cycle.")
 end
@@ -69,4 +88,5 @@ while tick() - startTime < 300 do
     doDash()
 end
 
-print("✅ Script ended after 5 minutes.")
+print("🏁 Script ended after 5 minutes.")
+

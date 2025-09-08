@@ -1,15 +1,13 @@
--- ===================================================================
--- SCRIPT CONFIGURATION
--- ===================================================================
+-- This script will attempt to join a list of raids for a duration of 5 minutes.
+-- It will also perform a "dash" action after each raid attempt.
 
 -- Run for 5 minutes (300 seconds)
 local startTime = tick()
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Remotes = ReplicatedStorage:WaitForChild("Remotes")
-local VIM = game:GetService("VirtualInputManager")
+local duration = 300 -- 5 minutes in seconds
 
--- A complete list of all Raid IDs to check
-local allRaidIDs = {
+-- List of all numerical IDs for the raids you provided
+-- The script will attempt to join these raids in the order they are listed.
+local raidIDs = {
     -- World 1
     930001, 930002, 930003, 930005, 930006, 930008,
     -- World 2
@@ -26,67 +24,37 @@ local allRaidIDs = {
     930061, 930062
 }
 
--- ===================================================================
--- ACTIONS
--- ===================================================================
-
--- This function now intelligently scans for raids.
--- It checks if a raid team was successfully created before proceeding
--- and adds a small delay to prevent spamming the server.
-local function doRaid()
-    print("Scanning for any available raids...")
-    for _, raidId in ipairs(allRaidIDs) do
-        -- Use pcall to safely call the server function and get the result
-        local success, result = pcall(function()
-            local args = {raidId}
-            -- InvokeServer asks the server to create a team and returns a response
-            return Remotes:WaitForChild("CreateRaidTeam"):InvokeServer(unpack(args))
-        end)
-
-        -- If the server call was successful AND the server confirmed the team was made (result is true)
-        if success and result then
-            print("✅ Successfully created team for Raid ID: " .. tostring(raidId))
-            
-            -- Now, attempt to start the raid map
-            pcall(function()
-                Remotes:WaitForChild("StartChallengeRaidMap"):FireServer()
-                print("-> Sent request to start the raid.")
-            end)
-            
-            -- Since we found and joined a raid, stop scanning for others.
-            break 
+-- The main loop that will run for 5 minutes
+while tick() - startTime < duration do
+    -- Loop through each raid ID in the list
+    for i, raidId in ipairs(raidIDs) do
+        -- Check if the timer has expired. If so, break out of both loops.
+        if tick() - startTime >= duration then
+            break
         end
-        
-        -- Wait a very short time before trying the next ID. This is CRITICAL.
-        -- It prevents the server from flagging you for spam.
-        wait(0.1) 
+
+        -- Raid actions: Create a team and start the challenge map
+        local args = {raidId}
+        game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CreateRaidTeam"):InvokeServer(unpack(args))
+        game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("StartChallengeRaidMap"):FireServer()
+
+        -- Wait 6 seconds
+        wait(6)
+
+        -- First dash
+        game:GetService("VirtualInputManager"):SendKeyEvent(true, "Q", false, game)
+        wait(0.1)
+        game:GetService("VirtualInputManager"):SendKeyEvent(false, "Q", false, game)
+
+        -- Wait for 30 seconds
+        wait(30)
+
+        -- Wait 3 seconds
+        wait(3)
+
+        -- Second dash
+        game:GetService("VirtualInputManager"):SendKeyEvent(true, "Q", false, game)
+        wait(0.1)
+        game:GetService("VirtualInputManager"):SendKeyEvent(false, "Q", false, game)
     end
-    print("Scan complete. Waiting for next cycle.")
 end
-
--- Dash action (presses and releases the 'Q' key)
-local function doDash()
-    VIM:SendKeyEvent(true, "Q", false, game)
-    wait(0.1)
-    VIM:SendKeyEvent(false, "Q", false, game)
-end
-
--- ===================================================================
--- MAIN LOOP
--- ===================================================================
-
-while tick() - startTime < 300 do
-    -- 1. Scan for and attempt to join any available raid
-    doRaid()
-
-    -- 2. Wait 6 seconds, then dash
-    wait(6)
-    doDash()
-
-    -- 3. Wait 33 seconds, then dash again
-    wait(33)
-    doDash()
-end
-
-print("🏁 Script ended after 5 minutes.")
-
